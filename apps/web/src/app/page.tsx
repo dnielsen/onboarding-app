@@ -71,7 +71,7 @@ export default function HomePage() {
       <footer className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border py-4 text-xs text-muted-foreground">
         <p>Open source. Built with Cognee.</p>
         <a
-          href="https://github.com/siiddhantt/onboarding-brain"
+          href="https://github.com/dnielsen/onboarding-app"
           className="rounded-sm underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           View the project

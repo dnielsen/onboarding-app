@@ -16,7 +16,7 @@ it('offers account setup and sign-in beside a clearly labelled example', () => {
   expect(screen.getByRole('figure')).toHaveTextContent('Example');
   expect(screen.getByRole('link', { name: 'View the project' })).toHaveAttribute(
     'href',
-    'https://github.com/siiddhantt/onboarding-brain',
+    'https://github.com/dnielsen/onboarding-app',
   );
 });
 

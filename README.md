@@ -10,8 +10,8 @@
 [Workflow](#workflow) ·
 [Contribute](CONTRIBUTING.md)
 
-[![Quality](https://img.shields.io/github/actions/workflow/status/siiddhantt/onboarding-brain/ci.yml?branch=main&style=flat-square&label=quality)](https://github.com/siiddhantt/onboarding-brain/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/siiddhantt/onboarding-brain?style=flat-square)](LICENSE)
+[![Quality](https://img.shields.io/github/actions/workflow/status/dnielsen/onboarding-app/ci.yml?branch=main&style=flat-square&label=quality)](https://github.com/dnielsen/onboarding-app/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/dnielsen/onboarding-app?style=flat-square)](LICENSE)
 
 </div>
 
@@ -62,8 +62,8 @@ unanswered questions.
 You need [Node 22.22.2](.nvmrc) or a supported newer version, pnpm 10, and Docker.
 
 ```bash
-git clone https://github.com/siiddhantt/onboarding-brain.git
-cd onboarding-brain
+git clone https://github.com/dnielsen/onboarding-app.git
+cd onboarding-app
 pnpm bootstrap
 pnpm dev
 ```
