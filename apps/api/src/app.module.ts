@@ -18,6 +18,9 @@ import { ShortLinksModule } from './features/short-links/short-links.module';
 import { AdminImpersonationModule } from './admin-impersonation/admin-impersonation.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { ProjectsModule } from './projects/projects.module';
+import { CompanyBrainModule } from './company-brain/company-brain.module';
+import { SourceConnectorsModule } from './source-connectors/source-connectors.module';
+import { DepartmentsModule } from './departments/departments.module';
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { ProjectsModule } from './projects/projects.module';
     AdminImpersonationModule,
     AdminDashboardModule,
     ProjectsModule,
+    CompanyBrainModule,
+    SourceConnectorsModule,
+    DepartmentsModule,
   ],
   controllers: [AppController],
   providers: [

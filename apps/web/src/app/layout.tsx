@@ -14,21 +14,21 @@ import { domainMappingsApi } from '@/lib/domain-mappings-api';
 import { CustomDomainProvider } from '@/components/providers/CustomDomainProvider';
 import { CookieConsentBanner } from '@/components/consent/CookieConsentBanner';
 import { ACCESS_TOKEN_KEY } from '@/lib/auth-storage';
+import { BRAND_NAME, LOGO_PATH } from '@/lib/brand';
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
   const host = headersList.get('host') || '';
 
   const defaultMetadata: Metadata = {
-    title: 'App Starter',
-    description:
-      'A multi-tenant SaaS starter with authentication, organizations, and invites already wired up.',
+    title: BRAND_NAME,
+    description: 'Source-backed answers from the onboarding knowledge your organization provides.',
     icons: {
-      icon: '/images/favicon.png',
+      icon: LOGO_PATH,
     },
   };
 
-  // Only attempt resolution if not on the main App Starter domain or localhost
+  // Only attempt resolution if not on the primary domain or localhost
   const isMainDomain = host.includes('example.com') || host.includes('localhost');
   if (!isMainDomain && host) {
     try {
@@ -74,7 +74,7 @@ export default async function RootLayout({
   let customLogoUrl: string | null = null;
   let logoHeight: number | null = null;
 
-  // Only attempt resolution if not on the main App Starter domain or localhost
+  // Only attempt resolution if not on the primary domain or localhost
   const isMainDomain = host.includes('example.com') || host.includes('localhost');
   if (!isMainDomain && host) {
     try {

@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { DomainMappingForm } from '@/components/organizations/DomainMappingForm'
 import { organizationsApi } from '@/lib/organizations-api';
 import { domainMappingsApi } from '@/lib/domain-mappings-api';
 import { authStorage } from '@/lib/auth-storage';
+import { DepartmentsSettingsPanel } from '@/components/departments/DepartmentsSettingsPanel';
 
 interface PageProps {
   params: Promise<{ organizationId: string }>;
@@ -28,6 +29,7 @@ interface PageProps {
 export default function OrganizationSettingsPage({ params }: PageProps) {
   const { organizationId } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -38,10 +40,13 @@ export default function OrganizationSettingsPage({ params }: PageProps) {
     queryFn: () => organizationsApi.getOrganization(organizationId),
   });
 
-  const { data: roleInfo } = useQuery({
+  const { data: roleInfo, isLoading: isRoleLoading } = useQuery({
     queryKey: ['organization-role', organizationId],
     queryFn: () => organizationsApi.getUserRoleInOrganization(organizationId),
   });
+
+  const role = roleInfo?.role ?? 'MEMBER';
+  const canManage = role === 'OWNER' || role === 'ADMIN';
 
   const { data: members, refetch: refetchMembers } = useQuery({
     queryKey: ['organization-members', organizationId],
@@ -51,9 +56,10 @@ export default function OrganizationSettingsPage({ params }: PageProps) {
   const { data: domains, refetch: refetchDomains } = useQuery({
     queryKey: ['domain-mappings', organizationId],
     queryFn: () => domainMappingsApi.list(organizationId),
+    enabled: canManage,
   });
 
-  if (isLoading || !organization) {
+  if (isLoading || isRoleLoading) {
     return (
       <PageContainer>
         <div className="flex justify-center py-24">
@@ -63,19 +69,34 @@ export default function OrganizationSettingsPage({ params }: PageProps) {
     );
   }
 
-  const role = roleInfo?.role ?? 'MEMBER';
-  const canManage = role === 'OWNER' || role === 'ADMIN';
+  if (!organization) {
+    return (
+      <PageContainer>
+        <p className="mx-auto max-w-4xl px-4 py-16 text-center text-muted-foreground">
+          Organization not found, or you no longer have access to it.
+        </p>
+      </PageContainer>
+    );
+  }
+
+  const requestedSection = searchParams.get('section');
+  const initialSection =
+    ['general', 'members', 'departments', 'domains'].includes(requestedSection ?? '') &&
+    (requestedSection !== 'domains' || canManage)
+      ? requestedSection!
+      : 'general';
 
   return (
     <PageContainer>
       <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
         <PageHeader title="Organization settings" description={organization.name} />
 
-        <Tabs defaultValue="general">
+        <Tabs defaultValue={initialSection}>
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="domains">Domains</TabsTrigger>
+            <TabsTrigger value="departments">Departments</TabsTrigger>
+            {canManage && <TabsTrigger value="domains">Custom domain</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="general" className="space-y-6 pt-6">
@@ -126,35 +147,52 @@ export default function OrganizationSettingsPage({ params }: PageProps) {
               currentUserId={currentUserId}
               currentUserRole={role}
               organizationId={organizationId}
-              onUserRemoved={() => refetchMembers()}
+              onUserRemoved={() => {
+                void refetchMembers();
+                void queryClient.invalidateQueries({ queryKey: ['departments', organizationId] });
+                void queryClient.invalidateQueries({
+                  queryKey: ['organization-role', organizationId],
+                });
+              }}
             />
 
             {canManage && <OrganizationPendingInvitesCard organizationId={organizationId} />}
           </TabsContent>
 
-          <TabsContent value="domains" className="space-y-6 pt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add a domain</CardTitle>
-                <CardDescription>
-                  Point a domain you own at this organization. You will be given a DNS TXT record to
-                  verify ownership.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DomainMappingForm
-                  organizationId={organizationId}
-                  onSuccess={() => refetchDomains()}
-                />
-              </CardContent>
-            </Card>
-
-            <DomainMappingList
+          <TabsContent value="departments" className="space-y-6 pt-6">
+            <DepartmentsSettingsPanel
               organizationId={organizationId}
-              mappings={domains?.domainMappings ?? []}
-              onRefresh={() => refetchDomains()}
+              members={members?.users ?? []}
+              canManage={canManage}
             />
           </TabsContent>
+
+          {canManage && (
+            <TabsContent value="domains" className="space-y-6 pt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Custom website domain</CardTitle>
+                  <CardDescription>
+                    Optional: serve your organization’s public page at a domain you own. This needs
+                    DNS and hosting setup; it does not control which email addresses can join your
+                    organization.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DomainMappingForm
+                    organizationId={organizationId}
+                    onSuccess={() => refetchDomains()}
+                  />
+                </CardContent>
+              </Card>
+
+              <DomainMappingList
+                organizationId={organizationId}
+                mappings={domains?.domainMappings ?? []}
+                onRefresh={() => refetchDomains()}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

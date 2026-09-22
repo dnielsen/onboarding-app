@@ -6,20 +6,28 @@
 @import '../styles/tokens.css';
 @import '../styles/rich-text.css';
 
+@font-face {
+  font-family: 'Lexend';
+  src: url('/fonts/Lexend-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     /* RGB triplets from DS light theme for opacity-aware utilities */
-    --background-rgb: 249 250 251; /* dew */
+    --background-rgb: 248 250 252;
     --foreground-rgb: 15 23 42; /* soil */
     --primary-rgb: 15 23 42; /* soil */
     --primary-foreground-rgb: 249 250 251;
     --muted-rgb: 229 231 235; /* mist */
     --muted-foreground-rgb: 75 85 99; /* stem */
     --border-rgb: 229 231 235;
-    --card-rgb: 249 250 251;
+    --card-rgb: 255 255 255;
     --accent-rgb: 229 231 235;
     --accent-foreground-rgb: 15 23 42;
-    --sidebar-rgb: 249 250 251;
+    --sidebar-rgb: 255 255 255;
     --sidebar-foreground-rgb: 75 85 99;
     --sidebar-border-rgb: 229 231 235;
     /* Destructive (from tokens.css --color-destructive) */
@@ -27,19 +35,19 @@
   }
 
   .dark {
-    --background-rgb: 31 41 55; /* dew (dark) */
-    --foreground-rgb: 243 244 246; /* soil (dark) */
-    --primary-rgb: 243 244 246;
-    --primary-foreground-rgb: 15 23 42;
-    --muted-rgb: 55 65 81; /* mist (dark) */
-    --muted-foreground-rgb: 156 163 175;
-    --border-rgb: 55 65 81;
-    --card-rgb: 31 41 55;
-    --accent-rgb: 55 65 81;
-    --accent-foreground-rgb: 243 244 246;
-    --sidebar-rgb: 15 23 42;
-    --sidebar-foreground-rgb: 243 244 246;
-    --sidebar-border-rgb: 55 65 81;
+    --background-rgb: 10 10 10;
+    --foreground-rgb: 245 245 245; /* soil (dark) */
+    --primary-rgb: 245 245 245;
+    --primary-foreground-rgb: 23 23 23;
+    --muted-rgb: 35 35 35;
+    --muted-foreground-rgb: 163 163 163;
+    --border-rgb: 46 46 46;
+    --card-rgb: 20 20 20;
+    --accent-rgb: 38 38 38;
+    --accent-foreground-rgb: 245 245 245;
+    --sidebar-rgb: 17 17 17;
+    --sidebar-foreground-rgb: 229 229 229;
+    --sidebar-border-rgb: 46 46 46;
     /* Destructive dark (from tokens.css .dark --color-destructive) */
     --destructive-rgb: 248 113 113;
   }
@@ -51,7 +59,7 @@
 
 @layer base {
   * {
-    border-color: var(--color-mist);
+    border-color: rgb(var(--border-rgb));
   }
 
   html,
@@ -62,8 +70,8 @@
   }
 
   body {
-    background-color: var(--color-dew);
-    color: var(--color-soil);
+    background-color: rgb(var(--background-rgb));
+    color: rgb(var(--foreground-rgb));
   }
 
   /* Typography – DS text scale */

@@ -21,6 +21,7 @@ export interface SidebarNavLinkComponentProps {
   className: string;
   children: ReactNode;
   active: boolean;
+  label: string;
 }
 
 export interface SidebarNavProps {
@@ -48,8 +49,15 @@ const SidebarNav = ({ items, className = '', activePath = '', LinkComponent }: S
     className: linkClassName,
     children,
     active,
+    label,
   }: SidebarNavLinkComponentProps) => (
-    <a href={to} className={linkClassName} aria-current={active ? 'page' : undefined}>
+    <a
+      href={to}
+      className={linkClassName}
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
+      title={label}
+    >
       {children}
     </a>
   );
@@ -65,10 +73,7 @@ const SidebarNav = ({ items, className = '', activePath = '', LinkComponent }: S
       {items.map((item, index) => {
         if ('type' in item && item.type === 'divider') {
           return (
-            <div
-              key={`divider-${index}`}
-              className="mx-2 my-2 border-t border-[var(--color-mist)]"
-            />
+            <div key={`divider-${index}`} className="mx-2 my-2 border-t border-sidebar-border" />
           );
         }
         if ('type' in item && item.type === 'spacer') {
@@ -79,18 +84,24 @@ const SidebarNav = ({ items, className = '', activePath = '', LinkComponent }: S
         const active = isNavActive(path);
         const isLastLink = index === lastLinkIndex;
         const linkClassName = [
-          'flex flex-col items-center gap-0.5 px-1 py-2.5 rounded-lg transition-colors mx-1',
+          'group relative mx-2 flex h-11 w-12 shrink-0 items-center justify-center rounded-xl transition-colors',
           isLastLink ? 'mb-2' : '',
           active
-            ? 'bg-[var(--color-mist)] text-[var(--color-soil)]'
-            : 'text-[var(--color-leaf)] hover:bg-[var(--color-mist)] hover:text-[var(--color-soil)]',
+            ? 'bg-accent text-accent-foreground shadow-sm'
+            : 'text-sidebar-foreground/65 hover:bg-accent/55 hover:text-accent-foreground',
         ]
           .filter(Boolean)
           .join(' ');
         return (
-          <Link key={path} to={path} className={linkClassName} active={active}>
-            {Icon && <Icon className="w-5 h-5" />}
-            <span className="text-[10px] font-medium">{label}</span>
+          <Link key={path} to={path} className={linkClassName} active={active} label={label}>
+            {active && (
+              <span
+                aria-hidden="true"
+                className="absolute -left-2 h-5 w-0.5 rounded-full bg-accent-foreground"
+              />
+            )}
+            {Icon && <Icon className="h-5 w-5 shrink-0" />}
+            <span className="sr-only">{label}</span>
           </Link>
         );
       })}

@@ -2,6 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -136,6 +137,38 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   R2_PUBLIC_URL?: string;
+
+  @IsIn(['true', 'false'])
+  @IsOptional()
+  COGNEE_ENABLED: string = 'false';
+
+  @IsString()
+  @IsOptional()
+  COGNEE_DATASET_PREFIX: string = 'organization';
+
+  @IsIn(['embedded', 'cloud'])
+  @IsOptional()
+  COGNEE_PROVIDER: string = 'embedded';
+
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  COGNEE_CLOUD_API_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  COGNEE_CLOUD_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  SOURCE_CREDENTIALS_ENCRYPTION_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  OPENAI_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  OPENAI_MODEL: string = 'gpt-4o-mini';
 }
 
 /**
@@ -174,6 +207,28 @@ function validateProductionSecrets(config: EnvironmentVariables): void {
   }
 }
 
+function validateCogneeConfiguration(config: EnvironmentVariables): void {
+  if (config.COGNEE_ENABLED !== 'true') {
+    return;
+  }
+
+  if (config.COGNEE_PROVIDER === 'cloud') {
+    const missing = [
+      !config.COGNEE_CLOUD_API_URL?.trim() ? 'COGNEE_CLOUD_API_URL' : null,
+      !config.COGNEE_CLOUD_API_KEY?.trim() ? 'COGNEE_CLOUD_API_KEY' : null,
+    ].filter(Boolean);
+
+    if (missing.length > 0) {
+      throw new Error(`COGNEE_ENABLED=true with cloud provider requires ${missing.join(' and ')}`);
+    }
+    return;
+  }
+
+  if (!config.OPENAI_TOKEN?.trim()) {
+    throw new Error('COGNEE_ENABLED=true requires OPENAI_TOKEN');
+  }
+}
+
 export function validate(config: Record<string, unknown>) {
   const validatedConfig = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
@@ -188,6 +243,7 @@ export function validate(config: Record<string, unknown>) {
   }
 
   validateProductionSecrets(validatedConfig);
+  validateCogneeConfiguration(validatedConfig);
 
   return validatedConfig;
 }

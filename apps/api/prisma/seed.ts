@@ -1,14 +1,10 @@
 /**
- * Development seed.
- *
- * Creates one demo organization with an owner, a member, and two projects.
- *
- * Idempotent — safe to run repeatedly. Records upsert on their natural keys,
- * so re-running updates rather than duplicates.
+ * Local demo: Northstar Studio, two accounts, and a department directory.
+ * Creates missing records without resetting existing passwords or configuration.
  *
  *   pnpm --filter @app-starter/api prisma:seed
  */
-import { PrismaClient, OrgRole, ProjectVisibility } from '@prisma/client';
+import { PrismaClient, OrgRole } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
@@ -54,8 +50,8 @@ async function seedDemoOrganization() {
     create: {
       email: 'owner@example.com',
       password: passwordHash,
-      name: 'Ada Owner',
-      username: 'ada',
+      name: 'Maya Chen',
+      username: 'maya',
       emailVerifiedAt: new Date(),
       isGlobalAdmin: true,
     },
@@ -67,58 +63,89 @@ async function seedDemoOrganization() {
     create: {
       email: 'member@example.com',
       password: passwordHash,
-      name: 'Mo Member',
-      username: 'mo',
+      name: 'Sam Rivera',
+      username: 'sam',
       emailVerifiedAt: new Date(),
     },
   });
 
   const organization = await prisma.organization.upsert({
-    where: { slug: 'acme' },
+    where: { slug: 'northstar-studio' },
     update: {},
     create: {
-      name: 'Acme Inc',
-      slug: 'acme',
-      description: 'Demo organization created by the seed script.',
+      name: 'Northstar Studio',
+      slug: 'northstar-studio',
+      description: 'A fictional design studio for exploring employee onboarding.',
       timezone: 'UTC',
     },
   });
 
+  const memberships = new Map<string, string>();
   for (const [user, role] of [
     [owner, OrgRole.OWNER],
     [member, OrgRole.MEMBER],
   ] as const) {
-    await prisma.organizationMember.upsert({
+    const membership = await prisma.organizationMember.upsert({
       where: { userId_organizationId: { userId: user.id, organizationId: organization.id } },
-      update: { role },
+      update: {},
       create: { userId: user.id, organizationId: organization.id, role },
     });
+    memberships.set(user.id, membership.id);
   }
 
-  const projects = [
+  const departments = [
     {
-      slug: 'website-redesign',
-      name: 'Website redesign',
-      description: 'Visible to everyone in the organization.',
-      visibility: ProjectVisibility.ORGANIZATION,
+      slug: 'people-operations',
+      name: 'People Operations',
+      description: 'Onboarding, benefits, time off, and workplace policies.',
+      contactUserId: owner.id,
     },
     {
-      slug: 'q3-planning',
-      name: 'Q3 planning',
-      description: "Private to its creator — won't appear for other members.",
-      visibility: ProjectVisibility.PRIVATE,
+      slug: 'finance',
+      name: 'Finance',
+      description: 'Expenses, purchasing, reimbursements, and company cards.',
+      contactUserId: member.id,
     },
   ];
 
-  for (const project of projects) {
-    await prisma.project.upsert({
-      where: { organizationId_slug: { organizationId: organization.id, slug: project.slug } },
+  for (const departmentData of departments) {
+    const department = await prisma.department.upsert({
+      where: {
+        organizationId_slug: {
+          organizationId: organization.id,
+          slug: departmentData.slug,
+        },
+      },
       update: {},
-      create: { ...project, organizationId: organization.id, createdById: owner.id },
+      create: {
+        organizationId: organization.id,
+        slug: departmentData.slug,
+        name: departmentData.name,
+        description: departmentData.description,
+      },
+    });
+    const organizationMemberId = memberships.get(departmentData.contactUserId);
+    if (!organizationMemberId) {
+      throw new Error(`Missing membership for department contact ${departmentData.contactUserId}`);
+    }
+
+    await prisma.departmentContact.upsert({
+      where: {
+        departmentId_organizationMemberId: {
+          departmentId: department.id,
+          organizationMemberId,
+        },
+      },
+      update: {},
+      create: {
+        organizationId: organization.id,
+        departmentId: department.id,
+        organizationMemberId,
+      },
     });
   }
 
-  console.log(`Seeded organization "${organization.name}" with 2 users and 2 projects`);
+  console.log(`Demo ready: ${organization.name} · 2 accounts · 2 departments`);
   console.log(`  owner@example.com / ${DEMO_PASSWORD}  (global admin)`);
   console.log(`  member@example.com / ${DEMO_PASSWORD}`);
 }

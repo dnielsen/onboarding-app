@@ -16,18 +16,10 @@ export default function LoginPage() {
   useEffect(() => {
     // Check if user is authenticated
     if (authStorage.isAuthenticated()) {
-      // Redirect based on params if logged in
-      const intent = searchParams.get('intent');
       const redirect = searchParams.get('redirect');
 
       if (redirect) {
         router.push(redirect);
-      } else if (intent === 'presentation') {
-        router.push('/create-topic?from=login');
-      } else if (intent === 'calendar') {
-        router.push('/organizations/create');
-      } else if (intent === 'collaboration') {
-        router.push('/events/create');
       } else {
         router.push('/dashboard');
       }
@@ -40,19 +32,21 @@ export default function LoginPage() {
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
-      <main className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+      <div className="min-h-[calc(100svh-4rem)] bg-background flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
-      </main>
+      </div>
     );
   }
 
   // Only show login/signup if not authenticated
   return (
-    <main className="min-h-screen bg-gradient-subtle">
-      <LandingHero />
-      <div className="container mx-auto px-4 pb-16">
+    <div className="mx-auto grid min-h-[calc(100svh-4rem)] max-w-6xl items-center gap-10 bg-background px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16">
+      <div className="hidden lg:block">
+        <LandingHero />
+      </div>
+      <div className="mx-auto w-full max-w-md lg:mx-0">
         <AuthCard initialMode={initialMode} />
       </div>
-    </main>
+    </div>
   );
 }

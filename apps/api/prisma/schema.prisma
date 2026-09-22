@@ -58,6 +58,7 @@ model User {
   notificationPreferences NotificationPreference[]
   inAppNotifications      InAppNotification[]
   createdProjects         Project[]                @relation("ProjectCreator")
+  createdKnowledgeSources KnowledgeSource[]        @relation("KnowledgeSourceCreator")
 
   adminImpersonationAudits AdminImpersonationAudit[] @relation("AdminImpersonationTargetUser")
   quarantinedAudits        AdminQuarantineAudit[]    @relation("QuarantinedUser")
@@ -153,6 +154,11 @@ model Organization {
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
   projects                Project[]
+  knowledgeSources        KnowledgeSource[]
+  sourceConnections       SourceConnection[]
+  sourceLocations         SourceLocation[]
+  departments             Department[]
+  departmentContacts      DepartmentContact[]
 
   @@map("organizations")
 }
@@ -164,10 +170,12 @@ model OrganizationMember {
   role           OrgRole
   createdAt      DateTime @default(now()) @db.Timestamptz(6)
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  departmentContacts DepartmentContact[]
 
   @@unique([userId, organizationId])
+  @@unique([id, organizationId])
   @@index([userId])
   @@index([organizationId])
   @@index([userId, role, organizationId])
@@ -382,6 +390,136 @@ model ShortLink {
 
   @@index([slug])
   @@map("short_links")
+}
+
+// ============================================================================
+// Company brain
+// ============================================================================
+
+enum KnowledgeSourceStatus {
+  PROCESSING
+  READY
+  FAILED
+  UPDATING
+  REMOVING
+}
+
+enum SourceConnectionStatus {
+  ACTIVE
+  DISCONNECTED
+}
+
+model SourceConnection {
+  id                  String                 @id @default(uuid())
+  organizationId      String                 @map("organization_id")
+  connectorId         String                 @map("connector_id")
+  name                String
+  externalAccountId   String                 @map("external_account_id")
+  accountName         String                 @map("account_name")
+  config              Json
+  encryptedCredential String?                @map("encrypted_credential")
+  status              SourceConnectionStatus @default(ACTIVE)
+  revision            Int                    @default(1)
+  lastVerifiedAt      DateTime               @map("last_verified_at") @db.Timestamptz(6)
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations    SourceLocation[]
+
+  @@unique([id, organizationId])
+  @@unique([organizationId, connectorId, externalAccountId])
+  @@map("source_connections")
+}
+
+model SourceLocation {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  connectionId   String    @map("connection_id")
+  externalId     String    @map("external_id")
+  locator        String
+  name           String
+  url            String
+  revision       Int       @default(1)
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connection   SourceConnection @relation(fields: [connectionId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@unique([connectionId, externalId])
+  @@index([organizationId, connectionId, archivedAt])
+  @@map("source_locations")
+}
+
+model KnowledgeSource {
+  id                         String                @id @default(uuid())
+  organizationId             String                @map("organization_id")
+  createdById                String                @map("created_by_id")
+  sourceType                 String                @default("DOCUMENT") @map("source_type")
+  name                       String
+  mimeType                   String?               @map("mime_type")
+  sizeBytes                  Int?                  @map("size_bytes")
+  status                     KnowledgeSourceStatus @default(PROCESSING)
+  providerReference          String?               @map("provider_reference")
+  providerContainerReference String?               @map("provider_container_reference")
+  connectorId                String?               @map("connector_id")
+  externalId                 String?               @map("external_id")
+  sourceUrl                  String?               @map("source_url")
+  contentHash                String?               @map("content_hash")
+  selection                  Json?
+  version                    Int                   @default(1)
+  lastIndexedAt              DateTime?             @map("last_indexed_at") @db.Timestamptz(6)
+  errorMessage               String?               @map("error_message")
+  archivedAt                 DateTime?             @map("archived_at") @db.Timestamptz(6)
+  createdAt                  DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt                  DateTime              @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("KnowledgeSourceCreator", fields: [createdById], references: [id])
+
+  @@index([organizationId, archivedAt, createdAt])
+  @@index([organizationId, status])
+  @@index([providerReference])
+  @@unique([organizationId, connectorId, externalId])
+  @@map("knowledge_sources")
+}
+
+model Department {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  name           String
+  slug           String
+  description    String?
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contacts     DepartmentContact[]
+
+  @@unique([organizationId, slug])
+  @@unique([id, organizationId])
+  @@index([organizationId, archivedAt, name])
+  @@map("departments")
+}
+
+model DepartmentContact {
+  id                   String   @id @default(uuid())
+  organizationId       String   @map("organization_id")
+  departmentId         String   @map("department_id")
+  organizationMemberId String   @map("organization_member_id")
+  createdAt            DateTime @default(now()) @db.Timestamptz(6)
+
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  department         Department         @relation(fields: [departmentId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  organizationMember OrganizationMember @relation(fields: [organizationMemberId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@unique([departmentId, organizationMemberId])
+  @@index([organizationId, departmentId])
+  @@index([organizationMemberId])
+  @@map("department_contacts")
 }
 
 // ============================================================================

@@ -1,256 +1,133 @@
-# App Starter
+<div align="center">
 
-A multi-tenant SaaS starter. NestJS and Next.js in a Turborepo, with the parts
-every SaaS needs already wired together: authentication, organizations with
-roles and invites, per-tenant custom domains, and a notification engine.
+<img src="apps/web/public/images/brain-mark.svg" alt="Onboarding Brain's open-book mark" width="72">
 
-Billing is deliberately not included — payment provider and pricing model vary
-too much between products for a starter to choose for you.
+# Onboarding Brain
 
-It ships with one small example vertical — Projects — so the patterns are
-visible end to end without burying them in a domain you have to delete.
+**Answers from the knowledge your team chooses to share.**
 
-## What you get
+[Run locally](#run-locally) ·
+[Workflow](#workflow) ·
+[Contribute](CONTRIBUTING.md)
 
-|                    |                                                                                   |
-| ------------------ | --------------------------------------------------------------------------------- |
-| **Auth**           | Email + password, OTP, Google OAuth, email verification, JWT with refresh cookies |
-| **Multi-tenancy**  | Organizations with `OWNER` / `ADMIN` / `MEMBER`, invite links, member management  |
-| **Custom domains** | Per-tenant domains with DNS verification and white-label branding                 |
-| **Notifications**  | Email and in-app, with per-user channel preferences                               |
-| **Admin**          | User search, quarantine, and impersonation — both fully audited                   |
-| **Storage**        | Provider interface with local and S3/R2 implementations                           |
+[![Quality](https://img.shields.io/github/actions/workflow/status/dnielsen/onboarding-app/ci.yml?branch=main&style=flat-square&label=quality)](https://github.com/dnielsen/onboarding-app/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/dnielsen/onboarding-app?style=flat-square)](LICENSE)
 
-## Requirements
+</div>
 
-- Node 22+ (`.nvmrc` pins it)
-- pnpm 8+
-- Docker with Compose, or Podman — PostgreSQL and Redis are both required, and
-  `docker compose` runs them for you
+An open-source onboarding workspace powered by [Cognee](https://www.cognee.ai/).
+Members ask questions and find the right people. Owners and admins choose the
+knowledge the team can use.
 
-## Setup
+## Features
+
+- **Organizations** — verified accounts, invitations, and owner, admin, and
+  member roles. Each organization's knowledge has its own Cognee dataset.
+- **Ask** — a scrollable conversation with Markdown answers, source citations,
+  and a no-answer state when supporting evidence is missing.
+- **Documents** — upload PDF, DOCX, TXT, Markdown, or HTML; track indexing status,
+  replace a source without changing its identity, or remove it from the brain.
+- **Source connections** — organization-owned credentials and saved locations.
+  Discover channels by name, reconnect, or replace credentials without restarting
+  the app. Discord channels and public threads are supported today.
+- **Curated imports** — preview before publishing, select individual items,
+  load more, filter by date, and search loaded content or the source. Review a
+  selection later to update what the team can use.
+- **Directory** — departments and contacts selected from current organization
+  members, so employees can find the right person when knowledge is missing.
+
+## Workflow
+
+1. **Set up the team.** Create an organization, invite members, and assign
+   department contacts.
+2. **Choose knowledge.** An owner or admin uploads a document, or connects a
+   source and saves a location for reuse.
+3. **Review and share.** For connected sources, preview and select useful items,
+   then confirm they can be shared with the organization.
+4. **Ask and maintain.** Members ask questions and inspect citations. Owners and
+   admins review selections, replace documents, or remove outdated knowledge.
+
+Published knowledge is visible to **all organization members**; original source
+permissions are not inherited. Imports are reviewed snapshots: upstream edits
+and deletions do not automatically change the brain. Disconnecting a connection
+or forgetting a saved location leaves published knowledge intact. Removing it
+from the brain never modifies the original source.
+
+Conversations currently last for the page session, and indexing runs
+synchronously. The directory provides contacts; it does not automatically route
+unanswered questions.
+
+## Run locally
+
+You need [Node 22.22.2](.nvmrc) or a supported newer version, pnpm 10, and Docker.
 
 ```bash
-git clone <this-repo>
-cd app-starter
+git clone https://github.com/dnielsen/onboarding-app.git
+cd onboarding-app
 pnpm bootstrap
-```
-
-Or skip the local toolchain entirely: `.devcontainer/` is configured, so
-**Code → Codespaces → Create codespace** on GitHub — or **Reopen in Container**
-in VS Code — gives you Node, pnpm, and Docker already installed and runs
-`pnpm bootstrap` for you. Nothing to install but the editor. In a
-browser-based Codespace, set `NEXT_PUBLIC_API_URL` to the forwarded URL for
-port 3001 and mark that port **Public**; `localhost` works as-is everywhere
-else.
-
-`pnpm bootstrap` copies the env files, installs dependencies, starts Postgres,
-Redis, and Mailpit, applies migrations, and seeds. It is safe to re-run — it
-never overwrites an env file that already exists.
-
-Then:
-
-```bash
 pnpm dev
 ```
 
-|                    |                                |
-| ------------------ | ------------------------------ |
-| Web                | http://localhost:3000          |
-| API                | http://localhost:3001          |
-| API docs (Swagger) | http://localhost:3001/api/docs |
-| Mailpit            | http://localhost:8025          |
+Open the [app](http://localhost:3000). Verification emails and invitations arrive
+in the [local inbox](http://localhost:8025), not a real mailbox.
 
-Mailpit is a local inbox that catches every email the app sends — verification
-links, password resets, OTP codes, invites — so you can click through those
-flows without a mail provider. Nothing leaves your machine.
+Bootstrap creates **Northstar Studio**, a fictional workspace with two accounts:
 
-The seed creates two accounts:
+| Account              | Role                |
+| -------------------- | ------------------- |
+| `owner@example.com`  | Maya Chen · Owner   |
+| `member@example.com` | Sam Rivera · Member |
 
-```
-owner@example.com  / Password123!   (also a global admin)
-member@example.com / Password123!
-```
+Both use `Password123!`. These are **local demo accounts**; the owner is also a
+global admin. Re-running bootstrap preserves existing credentials and settings.
+Seeding makes no Cognee calls.
 
-If you would rather set up by hand, see [Manual setup](#manual-setup). If
-something breaks, [`docs/troubleshooting.md`](docs/troubleshooting.md) has the
-failures you are most likely to hit and what actually fixes them.
+### Enable knowledge
 
-### Then build something
+Ingestion and Q&A need Cognee configured. Follow the
+[Cognee setup](docs/integrations.md#cognee-knowledge-layer) for Cloud or the embedded
+SDK, then restart the API. Keep credentials in the ignored environment files.
+Ingestion and questions use the configured provider and may incur usage charges.
 
-[**`docs/first-feature.md`**](docs/first-feature.md) walks through adding one
-feature end to end with a coding assistant — the prompt to write, the ten files
-that should come back, and how to tell whether what you got is right. Start
-there if this is your first time in a codebase this size.
+To try it, sign in as the owner and upload the
+[sample expense policy](examples/northstar-expense-policy.md) under **Company
+brain → Knowledge**. Once it is **Ready**, open **Ask**: “How do employees submit
+an expense report, and who approves it?” Check the citation, then sign in as the
+member to see the read-only knowledge and directory views.
 
-Google sign-in, S3/R2 storage, a real SMTP provider, and custom domains are
-all optional and off by default.
-[`docs/integrations.md`](docs/integrations.md) covers what each one needs, how
-to get credentials, and what breaks without it.
-[`docs/providers.md`](docs/providers.md) recommends who to host them with.
+For connected sources, follow the
+[connection setup](docs/integrations.md#source-connections) and
+[Discord requirements](docs/integrations.md#discord-curated-imports).
 
-## Architecture
+## Development
 
-```
-app-starter/
-├── apps/
-│   ├── api/                  NestJS + Prisma
-│   │   ├── prisma/           schema, migrations, seed
-│   │   └── src/
-│   │       ├── auth/         JWT, OAuth, OTP, guards
-│   │       ├── organizations/  tenants, members, invites, domains
-│   │       ├── projects/     the example vertical
-│   │       ├── notifications/  engine, templates, channels
-│   │       ├── users/        profiles
-│   │       ├── admin-*/      platform admin and impersonation
-│   │       └── common/       storage, guards, filters, utils
-│   └── web/                  Next.js App Router
-│       └── src/
-│           ├── app/          routes
-│           ├── components/   ui/ is the shared component set
-│           ├── hooks/
-│           └── lib/          API clients
-├── packages/shared/          types and constants used by both apps
-└── docker/postgres/
-```
-
-### Why one repository
-
-Two deployable apps, one repository. `apps/api` owns the database and business
-logic, `apps/web` owns the UI, and `packages/shared` holds the types and
-constants both import — as a workspace dependency, so a change to it is visible
-to both apps in the same commit with nothing to publish.
-
-The point is that a feature is **one change**. The migration, the endpoint, the
-DTO, the API client, and the screen land in a single commit: reviewable as a
-unit, revertible as a unit, and verified together by one `pnpm type-check`.
-Rename a shared field and both sides fail to compile immediately, rather than
-drifting apart until something breaks in an environment.
-
-**This matters most when you are building with a coding agent.** In one
-repository the agent can read the schema, the service, the DTO, the client, and
-the component in a single pass, so asking for a whole vertical slice — "add
-project archiving", schema through UI — produces a coherent change. Split
-across repositories, the same work becomes two conversations against two
-partial views, and the seam between them is where the mismatches land. Ask for
-the full slice, put anything crossing the boundary in `packages/shared`, and
-let the type checker confirm the two halves agree.
-
-[ADR 0009](docs/adr/0009-monorepo-over-separate-repositories.md) has the
-reasoning and the costs.
-
-Why the other pieces are what they are is recorded in
-[`docs/adr/`](docs/adr/README.md) — the framework choices, the
-frontend/backend split, the multi-tenancy model below, and why billing is
-left out.
-
-### How multi-tenancy works
-
-`Organization` is the tenant. Everything scoped to one carries an
-`organizationId`, and every query filters on it — a valid id from another
-tenant reads as 404 rather than revealing that the record exists.
-`ProjectsService` is the reference implementation; copy its shape.
-
-Role checks live in the service layer rather than a guard, because the
-organization id usually arrives as a route parameter that has to be resolved
-against the caller before a decision can be made. See
-[`docs/roles-and-permissions-guide.md`](docs/roles-and-permissions-guide.md).
-
-## Making it yours
-
-1. **Rename.** Replace `app-starter` in `package.json` files, `docker-compose.yml`,
-   and the `@app-starter/*` import scope. Update `apps/api/src/config/branding.ts`.
-2. **Replace Projects.** Delete `apps/api/src/projects` and
-   `apps/web/src/app/organizations/[organizationId]/projects`, then build your
-   own vertical on the same shape.
-3. **Add billing if you need it.** `Organization` is where it attaches — it
-   already has the identity and the membership list a seat count would use.
-   [ADR 0008](docs/adr/0008-no-billing-in-the-starter.md) explains why it is
-   left out and suggests a shape for entitlements.
-4. **Wire up the integrations you need** — Google sign-in, object storage,
-   SMTP, custom domains. See [`docs/integrations.md`](docs/integrations.md).
-5. **Before deploying,** read the checklist at the end of
-   [SECURITY.md](SECURITY.md).
-
-## Commands
-
-Run from the repository root:
-
-|                   |                                                     |
-| ----------------- | --------------------------------------------------- |
-| `pnpm dev`        | Start the API and web app                           |
-| `pnpm build`      | Build everything                                    |
-| `pnpm test`       | Run all tests                                       |
-| `pnpm verify`     | Type-check, lint, and test — the definition of done |
-| `pnpm lint`       | Lint everything                                     |
-| `pnpm type-check` | Type-check everything                               |
-| `pnpm clean`      | Remove build artifacts                              |
-| `pnpm format`     | Format with Prettier                                |
-
-Target one package with `--filter`:
+Next.js / React · NestJS / Prisma · PostgreSQL / Redis · pnpm / Turborepo
 
 ```bash
-pnpm --filter @app-starter/api dev
-pnpm --filter @app-starter/web test
+pnpm verify
+pnpm build
 ```
 
-### Database
-
-```bash
-cd apps/api
-pnpm exec prisma migrate dev --name describe_your_change   # create a migration
-pnpm exec prisma studio                                     # browse the data
-pnpm run prisma:seed                                        # re-seed
+```text
+apps/web/         Workspace UI
+apps/api/         API, database, and knowledge integrations
+packages/shared/  Shared API contracts
+docs/             Setup guides and architecture decisions
 ```
 
-## Manual setup
+Source adapters handle provider access, discovery, and search. Shared services
+handle connections, curation, and source lifecycle; the knowledge-engine adapter
+handles indexing and answers. Adding another source does not require changing
+the Q&A interface.
 
-If you prefer not to use `pnpm bootstrap`:
+[Contributing](CONTRIBUTING.md) · [Integrations](docs/integrations.md) ·
+[Architecture decisions](docs/adr/README.md) · [Troubleshooting](docs/troubleshooting.md) ·
+[Local API docs](http://localhost:3001/api/docs)
 
-```bash
-cp .env.example .env
-cp apps/api/.env.example apps/api/.env
-cp apps/api/.env.test.example apps/api/.env.test
-cp apps/web/.env.example apps/web/.env.local
+## Credits & license
 
-pnpm install
-docker compose up -d
+Built on [digohq/app-starter](https://github.com/digohq/app-starter), which provides
+the authentication and multi-tenant foundation. This is an independent community
+project using Cognee as its knowledge layer, not an official Cognee product.
 
-pnpm --filter @app-starter/api exec prisma migrate deploy
-pnpm --filter @app-starter/api run prisma:seed
-```
-
-The root `.env` only sets the ports the containers publish; application
-configuration lives in the per-app files.
-
-Database defaults: `localhost:5432`, database / user / password all
-`app_starter`. See [`docker/postgres/README.md`](docker/postgres/README.md).
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). The conventions the codebase follows
-are in [AGENTS.md](AGENTS.md), which doubles as context for coding assistants.
-
-## Security
-
-Please report vulnerabilities privately. See [SECURITY.md](SECURITY.md).
-
-## Provenance
-
-This started as Digo, an event-management platform we built for the tech
-community to share their events. The event domain was removed and what
-remained — authentication, organizations, notifications, custom domains,
-storage, and the admin surfaces — was generalised into a starter. The Projects
-example was written from scratch.
-
-The parts carried over have production mileage behind them. The parts that are
-new do not, though they are covered by tests.
-
-Much of the extraction was done with heavy AI assistance (Claude). The full
-suite passes — API unit and end-to-end, web, lint, type-check, build — and the
-result has been reviewed, but read what you are adopting before you build on
-it, as you would with any starter.
-
-## License
-
-[MIT](LICENSE)
+Available under the [MIT License](LICENSE).
