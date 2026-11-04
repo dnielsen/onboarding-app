@@ -92,7 +92,12 @@ async function resolveShortLink(slug: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  const hostname = request.headers.get('host') || '';
+  // Behind a reverse proxy (e.g. a sandboxed preview), the Host header is the
+  // proxy's own internal address, not the hostname a visitor's browser used.
+  // The proxy forwards the original hostname in X-Forwarded-Host, so prefer
+  // it when present; this keeps CORS/CSRF-style host checks aligned with
+  // X-Forwarded-Proto rather than comparing against an internal-only Host.
+  const hostname = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
   const { pathname } = request.nextUrl;
 
   // 1. Authenticated-only sections, gated before anything renders so a
@@ -235,7 +240,16 @@ function isStandardAppDomain(hostname: string): boolean {
     }
   }
 
-  // Check platform suffixes
+  // Check platform suffixes. A sandboxed preview sits behind a reverse proxy
+  // whose own internal address (not a tenant's custom domain) can appear as
+  // both Host and X-Forwarded-Host, so it belongs here with the other
+  // preview-platform hosts rather than being treated as an unmapped domain.
+  if (hostname.endsWith('.e2b.app')) return true;
+  const previewDomain = process.env.LIGHTSPRINT_PREVIEW_DOMAIN;
+  if (previewDomain && (hostname === previewDomain || hostname.endsWith(`.${previewDomain}`))) {
+    return true;
+  }
+
   return hostname.endsWith('.vercel.app') || hostname.endsWith('.railway.app');
 }
 
